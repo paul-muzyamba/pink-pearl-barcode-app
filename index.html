@@ -403,14 +403,20 @@ h1 { font-family: var(--ff-display); font-size: 1.6rem; font-weight: 300; margin
       <div class="field">
         <label>Sizes (optional)</label>
         <input type="text" id="fSizes" placeholder="e.g. S, M, L  or  36, 37, 38">
+        <p style="font-size:0.75rem; opacity:0.55; margin-top:4px;">If used, enter one barcode per size below, in the same order, separated by ;</p>
       </div>
       <div class="field">
-        <label>SKU / Barcode number</label>
+        <label>Barcode number (enter manually)</label>
+        <input type="text" id="fBarcode" placeholder="e.g. the number on your supplier's tag" autocomplete="off" autocorrect="off" spellcheck="false">
+        <p style="font-size:0.75rem; opacity:0.55; margin-top:4px;">This is the number that gets scanned/printed. Type it in yourself.</p>
+      </div>
+      <div class="field">
+        <label>SKU (auto-generated)</label>
         <div class="sku-input-group">
-          <input type="text" id="fSku" placeholder="e.g. V000000" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+          <input type="text" id="fSku" placeholder="e.g. 100001" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
           <button class="btn-gold" onclick="autoGenerateSku()">Generate number</button>
         </div>
-        <p style="font-size:0.75rem; opacity:0.55; margin-top:4px;">If you fill in Sizes above, one barcode is auto-generated per size and this SKU box is ignored.</p>
+        <p style="font-size:0.75rem; opacity:0.55; margin-top:4px;">Your own internal reference — auto-fills when you save if left blank. If you fill in Sizes above, one is auto-generated per size.</p>
       </div>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <button class="btn-primary" onclick="addItem()">Save item</button>
@@ -421,14 +427,14 @@ h1 { font-family: var(--ff-display); font-size: 1.6rem; font-weight: 300; margin
     <!-- Bulk add -->
     <div class="card" id="bulkCard" style="display:none;">
       <div class="field">
-        <label>One item per line — Name, Price, Sizes (both optional; separate sizes with ;)</label>
-        <textarea id="bulkText" rows="6" placeholder="Blue Denim Jacket, 450, S;M;L
-Red Blouse, 320
-Black Handbag, 600"></textarea>
+        <label>One item per line — Name, Price, Sizes, Barcode(s) (Price/Sizes optional; Barcode required — separate multiple with ; to match Sizes)</label>
+        <textarea id="bulkText" rows="6" placeholder="Blue Denim Jacket, 450, S;M;L, 100001;100002;100003
+Red Blouse, 320, , 100004
+Black Handbag, 600, , 100005"></textarea>
       </div>
       <button class="btn-primary" onclick="addBulk()">Generate SKUs &amp; save all</button>
       <p style="font-size:0.78rem; opacity:0.55; margin-top:10px;">
-        Each size gets its own auto-generated, unique SKU (a line with 3 sizes becomes 3 labels). Once saved, they're automatically selected below so you can print the whole batch right away.
+        Each line needs its own barcode(s) — typed in by you, matching the Sizes column in order (a line with 3 sizes needs 3 barcodes separated by ;). SKUs are generated automatically for every item. Once saved, they're automatically selected below so you can print the whole batch right away.
       </p>
     </div>
 
@@ -451,6 +457,37 @@ Black Handbag, 600"></textarea>
 
     <div id="itemList"></div>
   </main>
+</div>
+
+<!-- Edit item modal -->
+<div id="editOverlay" style="display:none; position:fixed; inset:0; background:rgba(10,9,9,0.55); z-index:50; align-items:center; justify-content:center; padding:20px;">
+  <div class="card" style="max-width:420px; width:100%; margin-bottom:0;">
+    <h2 style="font-family:var(--ff-display); font-weight:400; margin-bottom:14px;">Edit item</h2>
+    <input type="hidden" id="eId">
+    <div class="field">
+      <label>Item name</label>
+      <input type="text" id="eName">
+    </div>
+    <div class="field">
+      <label>Price (K)</label>
+      <input type="number" id="ePrice" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>Barcode number</label>
+      <input type="text" id="eBarcode" autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
+    <div class="field">
+      <label>SKU</label>
+      <div class="sku-input-group">
+        <input type="text" id="eSku" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="btn-gold" onclick="document.getElementById('eSku').value = nextSku()">Generate</button>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-ghost" style="flex:1;" onclick="closeEdit()">Cancel</button>
+      <button class="btn-primary" style="flex:1;" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
 </div>
 
 <div class="print-bar">

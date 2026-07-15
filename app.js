@@ -23,6 +23,17 @@ function load() {
   try {
     ITEMS = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
   } catch (_) { ITEMS = []; }
+  // Migrate older records that only had a combined "sku" field (used as the
+  // barcode) into the new separate sku/barcode shape.
+  let migrated = false;
+  ITEMS.forEach(it => {
+    if (!it.barcode) {
+      it.barcode = it.sku || '';
+      it.sku = '';
+      migrated = true;
+    }
+  });
+  if (migrated) save();
 }
 
 function save() {
@@ -41,7 +52,7 @@ function renderStats() {
   if (mPrinted) mPrinted.textContent = printed;
 }
 
-/* ── Auto SKU generator ───────────────────────────────────────── */
+/* ── Auto SKU generator (barcode is entered manually; SKU auto-fills) ── */
 function nextSku() {
   let counter = parseInt(localStorage.getItem(COUNTER_KEY)) || 100000;
   counter += 1;
@@ -63,27 +74,35 @@ function parseSizes(raw) {
     .filter(s => s.length > 0);
 }
 
-function makeItem(name, price, sku) {
+function makeItem(name, price, sku, barcode) {
   return {
     id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-    name, price, sku,
+    name, price, sku: sku || '', barcode,
   };
 }
 
 /* ── Add item ───────────────────────────────────────── */
 function addItem() {
-  const name   = document.getElementById('fName').value.trim();
-  const price  = document.getElementById('fPrice').value.trim();
-  const sku    = document.getElementById('fSku').value.trim();
-  const sizes  = parseSizes(document.getElementById('fSizes').value);
+  const name    = document.getElementById('fName').value.trim();
+  const price   = document.getElementById('fPrice').value.trim();
+  const sku     = document.getElementById('fSku').value.trim();
+  const barcode = document.getElementById('fBarcode').value.trim();
+  const sizes   = parseSizes(document.getElementById('fSizes').value);
 
   if (!name) { showToast('Enter an item name first.'); return; }
 
   if (sizes.length > 0) {
+    const barcodes = String(barcode).split(';').map(b => b.trim()).filter(b => b.length > 0);
+    if (barcodes.length !== sizes.length) {
+      showToast(`Enter ${sizes.length} barcode(s) separated by ; to match your ${sizes.length} size(s).`);
+      return;
+    }
+    const dupe = barcodes.find(b => ITEMS.some(it => it.barcode === b));
+    if (dupe) { showToast(`Barcode "${dupe}" is already used.`); return; }
+
     let added = 0;
-    sizes.forEach(size => {
-      const itemSku = nextSku();
-      ITEMS.unshift(makeItem(`${name} - ${size}`, price, itemSku));
+    sizes.forEach((size, i) => {
+      ITEMS.unshift(makeItem(`${name} - ${size}`, price, nextSku(), barcodes[i]));
       added++;
     });
     save();
@@ -91,25 +110,28 @@ function addItem() {
     document.getElementById('fPrice').value = '';
     document.getElementById('fSizes').value = '';
     document.getElementById('fSku').value = '';
+    document.getElementById('fBarcode').value = '';
     document.getElementById('fName').focus();
     renderList();
     showToast(`${added} size(s) saved, each with its own SKU.`);
     return;
   }
 
-  if (!sku)  { showToast('Add a SKU, or click "Generate number".'); return; }
+  if (!barcode) { showToast('Enter a barcode number.'); return; }
 
-  if (ITEMS.some(it => it.sku === sku)) {
-    showToast(`That SKU is already used by "${ITEMS.find(it => it.sku === sku).name}".`);
+  if (ITEMS.some(it => it.barcode === barcode)) {
+    showToast(`That barcode is already used by "${ITEMS.find(it => it.barcode === barcode).name}".`);
     return;
   }
 
-  ITEMS.unshift(makeItem(name, price, sku));
+  const finalSku = sku || nextSku();
+  ITEMS.unshift(makeItem(name, price, finalSku, barcode));
   save();
 
   document.getElementById('fName').value = '';
   document.getElementById('fPrice').value = '';
   document.getElementById('fSku').value = '';
+  document.getElementById('fBarcode').value = '';
   document.getElementById('fName').focus();
 
   renderList();
@@ -133,22 +155,28 @@ function addBulk() {
   }
 
   let added = 0;
+  let skipped = 0;
   lines.forEach(line => {
     const parts = line.split(',').map(p => p.trim());
     const name = parts[0];
     const price = parts[1] || '';
     const sizes = parseSizes(parts[2] || '');
+    const barcodes = String(parts[3] || '').split(';').map(b => b.trim()).filter(b => b.length > 0);
     if (!name) return;
 
     if (sizes.length > 0) {
-      sizes.forEach(size => {
-        const item = makeItem(`${name} - ${size}`, price, nextSku());
+      if (barcodes.length !== sizes.length) { skipped++; return; }
+      sizes.forEach((size, i) => {
+        if (ITEMS.some(it => it.barcode === barcodes[i])) { skipped++; return; }
+        const item = makeItem(`${name} - ${size}`, price, nextSku(), barcodes[i]);
         ITEMS.unshift(item);
         SELECTED.add(item.id);
         added++;
       });
     } else {
-      const item = makeItem(name, price, nextSku());
+      const barcode = barcodes[0];
+      if (!barcode || ITEMS.some(it => it.barcode === barcode)) { skipped++; return; }
+      const item = makeItem(name, price, nextSku(), barcode);
       ITEMS.unshift(item);
       SELECTED.add(item.id);
       added++;
@@ -158,7 +186,9 @@ function addBulk() {
   save();
   document.getElementById('bulkText').value = '';
   renderList();
-  showToast(`${added} item(s) saved with new SKUs and selected for printing.`);
+  showToast(skipped > 0
+    ? `${added} item(s) saved; ${skipped} line(s) skipped (missing/duplicate barcode).`
+    : `${added} item(s) saved with new SKUs and selected for printing.`);
 }
 
 function selectAllVisible() {
@@ -179,13 +209,60 @@ function deleteItem(id) {
   renderList();
 }
 
+/* ── Edit item (Update) ─────────────────────────────── */
+function openEdit(id) {
+  const it = ITEMS.find(i => i.id === id);
+  if (!it) return;
+  document.getElementById('eId').value = it.id;
+  document.getElementById('eName').value = it.name || '';
+  document.getElementById('ePrice').value = it.price || '';
+  document.getElementById('eSku').value = it.sku || '';
+  document.getElementById('eBarcode').value = it.barcode || '';
+  document.getElementById('editOverlay').style.display = 'flex';
+}
+
+function closeEdit() {
+  document.getElementById('editOverlay').style.display = 'none';
+}
+
+function saveEdit() {
+  const id      = document.getElementById('eId').value;
+  const name    = document.getElementById('eName').value.trim();
+  const price   = document.getElementById('ePrice').value.trim();
+  const sku     = document.getElementById('eSku').value.trim();
+  const barcode = document.getElementById('eBarcode').value.trim();
+
+  if (!name)    { showToast('Item name cannot be empty.'); return; }
+  if (!barcode) { showToast('Barcode number cannot be empty.'); return; }
+
+  const clash = ITEMS.find(i => i.barcode === barcode && i.id !== id);
+  if (clash) { showToast(`That barcode is already used by "${clash.name}".`); return; }
+
+  const it = ITEMS.find(i => i.id === id);
+  if (!it) { showToast('Item not found.'); closeEdit(); return; }
+
+  it.name = name;
+  it.price = price;
+  it.sku = sku;
+  it.barcode = barcode;
+
+  save();
+  renderList();
+  closeEdit();
+  showToast('Item updated.');
+}
+
 /* ── List rendering ───────────────────────────────────────────── */
 function getFiltered() {
   const q = document.getElementById('search').value.trim().toLowerCase();
   const onlySel = document.getElementById('onlySelected').checked;
   return ITEMS.filter(it => {
     if (onlySel && !SELECTED.has(it.id)) return false;
-    if (q && !(it.name.toLowerCase().includes(q) || it.sku.includes(q))) return false;
+    if (q && !(
+      it.name.toLowerCase().includes(q) ||
+      (it.sku || '').toLowerCase().includes(q) ||
+      (it.barcode || '').includes(q)
+    )) return false;
     return true;
   });
 }
@@ -209,12 +286,14 @@ function renderList() {
       <div>
         <div class="item-row__name">${escapeHtml(it.name)}</div>
         ${it.price ? `<div class="item-row__price">K${escapeHtml(it.price)}</div>` : ''}
-        <div class="item-row__sku">${escapeHtml(it.sku)}</div>
+        ${it.sku ? `<div class="item-row__sku">SKU: ${escapeHtml(it.sku)}</div>` : ''}
+        <div class="item-row__sku">Barcode: ${escapeHtml(it.barcode)}</div>
       </div>
       <div class="item-row__qty">
         <input type="number" min="1" value="1" id="qty-${it.id}" title="Copies to print">
       </div>
       <div class="item-row__actions">
+        <button class="action-btn" onclick="openEdit('${it.id}')">Edit</button>
         <button class="action-btn del" onclick="deleteItem('${it.id}')">Remove</button>
       </div>
       <div></div>
@@ -278,12 +357,12 @@ function printSelected() {
       printArea.appendChild(div);
 
       try {
-        const cleanSku = sanitizeSku(it.sku);
-        JsBarcode(svg, cleanSku, {
+        const cleanBarcode = sanitizeBarcode(it.barcode);
+        JsBarcode(svg, cleanBarcode, {
           format: 'CODE128', displayValue: true, fontSize: 12, height: 40, margin: 2,
         });
       } catch (e) {
-        svg.outerHTML = `<div style="color:red;font-size:8px;text-align:center;padding:2px;">Invalid SKU: "${escapeHtml(it.sku)}"<br>${escapeHtml(e.message || '')}</div>`;
+        svg.outerHTML = `<div style="color:red;font-size:8px;text-align:center;padding:2px;">Invalid barcode: "${escapeHtml(it.barcode)}"<br>${escapeHtml(e.message || '')}</div>`;
       }
     }
   });
@@ -316,7 +395,11 @@ function importData(file) {
       if (!Array.isArray(incoming)) throw new Error('Not a valid backup file.');
       let added = 0;
       incoming.forEach(it => {
-        if (it.sku && !ITEMS.some(existing => existing.sku === it.sku)) {
+        // Support both new-format ({sku, barcode}) and old-format ({sku only}) backups.
+        const barcode = it.barcode || it.sku || '';
+        if (barcode && !ITEMS.some(existing => existing.barcode === barcode)) {
+          it.barcode = barcode;
+          if (!it.barcode || it.sku === barcode) it.sku = it.sku === barcode ? '' : (it.sku || '');
           ITEMS.push(it);
           added++;
         }
@@ -347,8 +430,8 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-function sanitizeSku(sku) {
-  return String(sku ?? '')
+function sanitizeBarcode(barcode) {
+  return String(barcode ?? '')
     .trim()
     .replace(/[\u2010-\u2015]/g, '-')   // en/em dash, hyphen variants → plain hyphen
     .replace(/[\u2018\u2019]/g, "'")    // curly single quotes → straight
@@ -357,7 +440,7 @@ function sanitizeSku(sku) {
 }
 
 /* Enter key on add-item fields */
-['fName', 'fPrice', 'fSku'].forEach(id => {
+['fName', 'fPrice', 'fSku', 'fBarcode'].forEach(id => {
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById(id)?.addEventListener('keydown', e => {
       if (e.key === 'Enter') addItem();
