@@ -241,6 +241,8 @@ h1 { font-family: var(--ff-display); font-size: 1.6rem; font-weight: 300; margin
 .print-bar__actions .btn-ghost, .print-bar__actions .btn-primary { flex: 1; padding: 12px 10px; font-size: 0.82rem; }
 .print-bar__actions .btn-ghost { color: #fff; border-color: rgba(240,235,227,0.25); }
 .print-bar__import-label { display: flex; align-items: center; justify-content: center; }
+.print-bar__reminder { font-size: 0.7rem; opacity: 0.75; text-align: center; line-height: 1.4; }
+.print-bar__reminder b { color: var(--pink); }
 
 /* ── Toast ──────────────────────────────────────────────────── */
 .toast {
@@ -501,6 +503,7 @@ Black Handbag, 600, , BAG-BLK"></textarea>
       <input type="number" id="labelH" value="60">
     </div>
   </div>
+  <div class="print-bar__reminder">Chrome print dialog must show: <b>Paper size 40mm x 60mm</b> · <b>Margins: None</b> · <b>Scale: Custom 60</b><br>Printer driver (Printing Preferences) Stock must be <b>BARCODES (40x60mm)</b> with <b>Printing Scale: Fit</b></div>
   <div class="print-bar__actions">
     <button class="btn-ghost" onclick="exportData()">Export</button>
     <label class="btn-ghost print-bar__import-label">
