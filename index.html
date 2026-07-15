@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Pink Pearl Couture — Barcode Labels</title>
+<meta name="theme-color" content="#0a0909" />
+
+<link rel="manifest" href="./manifest.json" />
+<link rel="apple-touch-icon" href="./assets/icon.svg" />
+<link rel="icon" href="./assets/icon.svg" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<script src="./assets/JsBarcode.all.min.js"></script>
+
+<style>
+:root {
+  --pink:       #c4506a;
+  --pink-dark:  #a33a52;
+  --pink-light: #f0c0cc;
+  --black:      #0a0909;
+  --ink:        #1a1818;
+  --offwhite:   #f0ebe3;
+  --cream:      #f7f2f4;
+  --gold:       #b8922e;
+  --sidebar-w:  240px;
+  --ff-display: 'Cormorant Garamond', Georgia, serif;
+  --ff-body:    'Jost', sans-serif;
+  --radius:     10px;
+  --shadow:     0 2px 12px rgba(10,9,9,0.10);
+  --shadow-md:  0 4px 24px rgba(10,9,9,0.15);
+  --tap:        48px; /* minimum comfortable touch target */
+  --safe-b:     env(safe-area-inset-bottom, 0px);
+  --safe-t:     env(safe-area-inset-top, 0px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--ff-body);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--cream);
+  min-height: 100vh;
+}
+
+input, select, button, textarea { font-family: var(--ff-body); font-size: 1rem; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: none; background: none; }
+
+/* ================================================================
+   MOBILE-FIRST BASE LAYOUT (default = phone)
+================================================================ */
+
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Compact top bar replaces the sidebar on small screens */
+.topbar {
+  background: var(--black);
+  color: var(--offwhite);
+  padding: calc(14px + var(--safe-t)) 16px 14px;
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: var(--shadow-md);
+}
+.topbar__logo-main {
+  font-family: var(--ff-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.topbar__logo-main span { color: var(--pink); }
+.topbar__stats { display: flex; gap: 16px; }
+.topbar__stat { text-align: right; }
+.topbar__stat-num { font-family: var(--ff-display); font-size: 1.15rem; color: var(--pink); line-height: 1; }
+.topbar__stat-label { font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.5; margin-top: 2px; }
+
+/* Sidebar only exists for desktop layout — hidden by default */
+.sidebar { display: none; }
+
+.main { flex: 1; padding: 16px 16px calc(180px + var(--safe-b)); min-width: 0; }
+
+h1 { font-family: var(--ff-display); font-size: 1.6rem; font-weight: 300; margin-bottom: 4px; }
+.subtitle { font-size: 0.85rem; opacity: 0.55; margin-bottom: 20px; }
+
+/* ── Cards / fields ─────────────────────────────────────────── */
+.card { background: #fff; border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-bottom: 20px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.65; }
+.field input, .field select, .field textarea {
+  padding: 13px 14px;
+  border: 1.5px solid rgba(10,9,9,0.15);
+  border-radius: var(--radius);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  min-height: var(--tap);
+  font-family: var(--ff-body);
+  resize: vertical;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--pink); }
+
+.row { display: flex; flex-direction: column; gap: 0; }
+.row > .field { flex: 1; min-width: 0; }
+
+.sku-input-group { display: flex; flex-direction: column; gap: 10px; }
+.sku-input-group input { flex: 1; }
+.sku-input-group .btn-gold { width: 100%; min-height: var(--tap); }
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn-primary {
+  background: var(--pink);
+  color: #fff;
+  padding: 13px 22px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+  transition: background 0.2s;
+  width: 100%;
+  min-height: var(--tap);
+}
+.btn-primary:hover, .btn-primary:active { background: var(--pink-dark); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  padding: 13px 20px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 0.88rem;
+  border: 1.5px solid rgba(10,9,9,0.15);
+  transition: border-color 0.2s;
+  min-height: var(--tap);
+}
+.btn-ghost:hover, .btn-ghost:active { border-color: var(--pink); color: var(--pink); }
+
+.btn-gold {
+  background: var(--cream);
+  color: var(--gold);
+  padding: 13px 16px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: 1.5px solid rgba(184,146,46,0.3);
+  white-space: nowrap;
+}
+.btn-gold:hover, .btn-gold:active { border-color: var(--gold); }
+
+/* ── View header / filters ─────────────────────────────────── */
+.view-header {
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: 12px; margin-bottom: 16px;
+}
+.view-header h2 { font-family: var(--ff-display); font-size: 1.3rem; font-weight: 400; }
+.filters { display: flex; flex-direction: column; gap: 10px; }
+.filters input, .filters select {
+  padding: 13px 14px;
+  border: 1.5px solid rgba(10,9,9,0.12);
+  border-radius: var(--radius);
+  outline: none;
+  min-height: var(--tap);
+  width: 100%;
+}
+.filters input:focus, .filters select:focus { border-color: var(--pink); }
+
+.toggle-label {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.88rem; cursor: pointer;
+  min-height: var(--tap);
+}
+.toggle-label input { width: 20px; height: 20px; accent-color: var(--pink); flex-shrink: 0; }
+
+/* ── Product list ───────────────────────────────────────────── */
+.item-row {
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  grid-template-areas:
+    "check name qty"
+    "check actions actions";
+  align-items: center;
+  gap: 10px 14px;
+  box-shadow: var(--shadow);
+  margin-bottom: 10px;
+  transition: box-shadow 0.2s;
+}
+.item-row:hover { box-shadow: var(--shadow-md); }
+.item-row.selected { outline: 1.5px solid var(--pink); }
+
+.item-row__check { grid-area: check; width: 24px; height: 24px; accent-color: var(--pink); cursor: pointer; }
+.item-row__name { grid-area: name; font-weight: 600; font-size: 0.95rem; }
+.item-row__price { font-size: 0.84rem; color: var(--pink); font-weight: 600; margin-top: 2px; }
+.item-row__sku { font-size: 0.78rem; opacity: 0.5; margin-top: 2px; font-family: monospace; }
+
+.item-row__qty { grid-area: qty; }
+.item-row__qty input {
+  width: 56px; padding: 10px 6px;
+  border: 1.5px solid rgba(10,9,9,0.15); border-radius: var(--radius);
+  text-align: center;
+  min-height: 44px;
+}
+
+.item-row__actions { grid-area: actions; display: flex; gap: 8px; justify-content: flex-end; }
+.action-btn {
+  padding: 10px 16px; border-radius: var(--radius); font-size: 0.8rem; font-weight: 600;
+  border: 1.5px solid rgba(10,9,9,0.1); transition: all 0.2s;
+  min-height: 40px;
+}
+.action-btn:hover, .action-btn:active { border-color: var(--pink); color: var(--pink); }
+.action-btn.del:hover, .action-btn.del:active { border-color: #e53e3e; color: #e53e3e; }
+
+.empty-state { text-align: center; padding: 50px 20px; opacity: 0.45; }
+
+/* ── Fixed bottom print bar (mobile) ───────────────────────── */
+.print-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  margin-top: 0;
+  background: var(--black); color: var(--offwhite);
+  border-radius: 0;
+  padding: 14px 16px calc(14px + var(--safe-b));
+  display: flex; flex-direction: column;
+  gap: 12px; box-shadow: 0 -4px 24px rgba(10,9,9,0.25);
+  z-index: 30;
+}
+.print-bar__top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.print-bar__count { font-family: var(--ff-display); font-size: 1rem; }
+.print-bar__count span { color: var(--pink); font-weight: 600; }
+.print-bar__sizes { display: flex; align-items: center; gap: 8px; font-size: 0.76rem; opacity: 0.85; white-space: nowrap; }
+.print-bar__sizes input { width: 48px; padding: 8px 6px; border-radius: 6px; border: none; text-align: center; min-height: 36px; }
+.print-bar__actions { display: flex; gap: 8px; }
+.print-bar__actions .btn-ghost, .print-bar__actions .btn-primary { flex: 1; padding: 12px 10px; font-size: 0.82rem; }
+.print-bar__actions .btn-ghost { color: #fff; border-color: rgba(240,235,227,0.25); }
+.print-bar__import-label { display: flex; align-items: center; justify-content: center; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: calc(170px + var(--safe-b)); left: 16px; right: 16px;
+  background: var(--ink); color: #fff; padding: 13px 18px;
+  border-radius: var(--radius); font-size: 0.88rem; box-shadow: var(--shadow-md);
+  opacity: 0; transform: translateY(10px); transition: all 0.25s; pointer-events: none;
+  z-index: 999; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── Print output ─────────────────────────────────────────────── */
+#printArea { display: none; }
+
+@media print {
+  body * { visibility: hidden; }
+  #printArea, #printArea * { visibility: visible; }
+  #printArea { display: block; position: absolute; top: 0; left: 0; padding: 0; margin: 0; }
+  .print-label {
+    page-break-after: always;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: var(--label-w); height: var(--label-h); padding: 2mm;
+  }
+  .print-label .print-label__name { font-size: 9px; text-align: center; margin-bottom: 1mm; font-weight: 600; font-family: Arial, sans-serif; }
+  .print-label .print-label__price { font-size: 9px; text-align: center; margin-top: 1mm; font-weight: 600; font-family: Arial, sans-serif; }
+  .print-label svg { width: 100%; }
+  @page { margin: 0; size: auto; }
+}
+
+/* ================================================================
+   DESKTOP ENHANCEMENT (min-width: 720px)
+   Progressive enhancement on top of the mobile-first base above.
+================================================================ */
+@media (min-width: 720px) {
+  .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+
+  .topbar { display: none; }
+
+  .sidebar {
+    display: flex;
+    background: var(--black);
+    color: var(--offwhite);
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .sidebar__logo { padding: 28px 20px 24px; border-bottom: 1px solid rgba(240,235,227,0.08); }
+  .sidebar__logo-main {
+    font-family: var(--ff-display);
+    font-size: 1.15rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .sidebar__logo-main span { color: var(--pink); }
+  .sidebar__logo-sub { font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.35; margin-top: 3px; }
+  .sidebar__stats { padding: 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+  .sidebar__stat-num { font-family: var(--ff-display); font-size: 2rem; color: var(--pink); line-height: 1; }
+  .sidebar__stat-label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.45; margin-top: 4px; }
+  .sidebar__footer { padding: 16px 20px 20px; border-top: 1px solid rgba(240,235,227,0.08); }
+  .sidebar__hint { font-size: 0.7rem; opacity: 0.35; line-height: 1.5; }
+
+  .main { padding: 32px 40px 140px; overflow-y: auto; }
+
+  h1 { font-size: 1.9rem; }
+  .subtitle { margin-bottom: 28px; }
+
+  .card { padding: 24px; }
+  .row { flex-direction: row; gap: 16px; flex-wrap: wrap; }
+  .row > .field { min-width: 160px; }
+  .sku-input-group { flex-direction: row; gap: 8px; }
+  .sku-input-group .btn-gold { width: auto; }
+
+  .btn-primary, .btn-ghost { width: auto; }
+
+  .view-header { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .filters { flex-direction: row; align-items: center; flex-wrap: wrap; }
+  .filters input, .filters select { width: auto; }
+  .toggle-label { min-height: auto; }
+  .toggle-label input { width: 16px; height: 16px; }
+
+  .item-row {
+    grid-template-columns: 24px 1fr auto auto auto;
+    grid-template-areas: "check name qty actions actions";
+    padding: 14px 20px;
+  }
+  .item-row__qty input { min-height: auto; padding: 8px 6px; }
+  .action-btn { min-height: auto; padding: 7px 12px; }
+
+  .print-bar {
+    position: sticky; bottom: 0; margin-top: 20px;
+    border-radius: var(--radius); padding: 16px 24px;
+    flex-direction: row; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; box-shadow: var(--shadow-md);
+  }
+  .print-bar__top-row { display: contents; }
+  .print-bar__sizes input { min-height: auto; }
+  .print-bar__actions { flex-wrap: nowrap; }
+  .print-bar__actions .btn-ghost, .print-bar__actions .btn-primary { flex: none; padding: 12px 22px; font-size: 0.85rem; }
+
+  .toast { left: auto; right: 24px; bottom: 24px; width: auto; text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Mobile top bar -->
+  <header class="topbar">
+    <div class="topbar__logo-main">PINK <span>PEARL</span></div>
+    <div class="topbar__stats">
+      <div class="topbar__stat">
+        <div class="topbar__stat-num" id="statTotalMobile">0</div>
+        <div class="topbar__stat-label">Items</div>
+      </div>
+      <div class="topbar__stat">
+        <div class="topbar__stat-num" id="statPrintedMobile">0</div>
+        <div class="topbar__stat-label">Printed</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Desktop sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar__logo">
+      <div class="sidebar__logo-main">PINK <span>PEARL</span></div>
+      <div class="sidebar__logo-sub">Barcode Labels</div>
+    </div>
+    <div class="sidebar__stats">
+      <div>
+        <div class="sidebar__stat-num" id="statTotal">0</div>
+        <div class="sidebar__stat-label">Items Saved</div>
+      </div>
+      <div>
+        <div class="sidebar__stat-num" id="statPrinted">0</div>
+        <div class="sidebar__stat-label">Labels Printed This Session</div>
+      </div>
+    </div>
+    <div class="sidebar__footer">
+      <div class="sidebar__hint">Everything here is saved on this computer only. Use Export below to back up your list.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <h1>Barcode Labels</h1>
+    <p class="subtitle">Add an item once, print as many labels as you need. Works fully offline.</p>
+
+    <!-- Add item -->
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label>Item name</label>
+          <input type="text" id="fName" placeholder="e.g. Blue Denim Jacket">
+        </div>
+        <div class="field" style="max-width:100%;">
+          <label>Price (K)</label>
+          <input type="number" id="fPrice" placeholder="e.g. 450" inputmode="decimal">
+        </div>
+      </div>
+      <div class="field">
+        <label>Sizes (optional)</label>
+        <input type="text" id="fSizes" placeholder="e.g. S, M, L  or  36, 37, 38">
+      </div>
+      <div class="field">
+        <label>SKU / Barcode number</label>
+        <div class="sku-input-group">
+          <input type="text" id="fSku" placeholder="e.g. V000000" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="btn-gold" onclick="autoGenerateSku()">Generate number</button>
+        </div>
+        <p style="font-size:0.75rem; opacity:0.55; margin-top:4px;">If you fill in Sizes above, one barcode is auto-generated per size and this SKU box is ignored.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button class="btn-primary" onclick="addItem()">Save item</button>
+        <button class="btn-ghost" onclick="toggleBulk()">Add multiple at once</button>
+      </div>
+    </div>
+
+    <!-- Bulk add -->
+    <div class="card" id="bulkCard" style="display:none;">
+      <div class="field">
+        <label>One item per line — Name, Price, Sizes (both optional; separate sizes with ;)</label>
+        <textarea id="bulkText" rows="6" placeholder="Blue Denim Jacket, 450, S;M;L
+Red Blouse, 320
+Black Handbag, 600"></textarea>
+      </div>
+      <button class="btn-primary" onclick="addBulk()">Generate SKUs &amp; save all</button>
+      <p style="font-size:0.78rem; opacity:0.55; margin-top:10px;">
+        Each size gets its own auto-generated, unique SKU (a line with 3 sizes becomes 3 labels). Once saved, they're automatically selected below so you can print the whole batch right away.
+      </p>
+    </div>
+
+    <!-- List / filter -->
+    <div class="view-header">
+      <h2>Your Items</h2>
+      <div class="filters">
+        <input type="text" id="search" placeholder="🔍 Search…" oninput="renderList()">
+        <label class="toggle-label">
+          <input type="checkbox" id="onlySelected" onchange="renderList()">
+          Selected only
+        </label>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+      <button class="btn-ghost" onclick="selectAllVisible()">Select all visible</button>
+      <button class="btn-ghost" onclick="clearSelection()">Clear selection</button>
+    </div>
+
+    <div id="itemList"></div>
+  </main>
+</div>
+
+<div class="print-bar">
+  <div class="print-bar__top-row">
+    <div class="print-bar__count"><span id="printCount">0</span> item(s) selected</div>
+    <div class="print-bar__sizes">
+      mm:
+      <input type="number" id="labelW" value="40"> ×
+      <input type="number" id="labelH" value="30">
+    </div>
+  </div>
+  <div class="print-bar__actions">
+    <button class="btn-ghost" onclick="exportData()">Export</button>
+    <label class="btn-ghost print-bar__import-label">
+      Import
+      <input type="file" accept=".json" style="display:none;" onchange="importData(this.files[0])">
+    </label>
+    <button class="btn-primary" onclick="printSelected()">🖨️ Print</button>
+  </div>
+</div>
+
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<script src="./app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
