@@ -57,8 +57,8 @@ function renderStats() {
 function nextBarcode() {
   let counter = parseInt(localStorage.getItem(COUNTER_KEY)) || 100000;
   counter += 1;
-  // Make sure it's not already used
-  while (ITEMS.some(it => it.barcode === String(counter))) counter += 1;
+  // Make sure it's not already used as a barcode OR a SKU on any item
+  while (ITEMS.some(it => it.barcode === String(counter) || it.sku === String(counter))) counter += 1;
   localStorage.setItem(COUNTER_KEY, counter);
   return String(counter);
 }
@@ -71,7 +71,8 @@ function autoGenerateBarcode() {
 function nextSku() {
   let counter = parseInt(localStorage.getItem(SKU_COUNTER_KEY)) || 100000;
   counter += 1;
-  while (ITEMS.some(it => it.sku === String(counter))) counter += 1;
+  // Make sure it's not already used as a SKU OR a barcode on any item
+  while (ITEMS.some(it => it.sku === String(counter) || it.barcode === String(counter))) counter += 1;
   localStorage.setItem(SKU_COUNTER_KEY, counter);
   return String(counter);
 }
