@@ -341,8 +341,8 @@ function printSelected() {
     return;
   }
 
-  const w = document.getElementById('labelW').value || 60;
-  const h = document.getElementById('labelH').value || 40;
+  const w = document.getElementById('labelW').value || 40;
+  const h = document.getElementById('labelH').value || 60;
   document.documentElement.style.setProperty('--label-w', w + 'mm');
   document.documentElement.style.setProperty('--label-h', h + 'mm');
 
