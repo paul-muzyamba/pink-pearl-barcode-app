@@ -5,9 +5,10 @@
    no login, no internet needed after the first load.
 ================================================================ */
 
-const STORAGE_KEY   = 'ppc_barcode_items';
-const COUNTER_KEY   = 'ppc_barcode_counter';
-const PRINTED_KEY   = 'ppc_barcode_printed_count';
+const STORAGE_KEY     = 'ppc_barcode_items';
+const COUNTER_KEY     = 'ppc_barcode_counter';
+const SKU_COUNTER_KEY = 'ppc_sku_counter';
+const PRINTED_KEY     = 'ppc_barcode_printed_count';
 
 let ITEMS    = [];
 let SELECTED = new Set();
@@ -52,13 +53,26 @@ function renderStats() {
   if (mPrinted) mPrinted.textContent = printed;
 }
 
-/* ── Auto SKU generator (barcode is entered manually; SKU auto-fills) ── */
-function nextSku() {
+/* ── Auto barcode generator (SKU and barcode are separate fields) ── */
+function nextBarcode() {
   let counter = parseInt(localStorage.getItem(COUNTER_KEY)) || 100000;
   counter += 1;
   // Make sure it's not already used
-  while (ITEMS.some(it => it.sku === String(counter))) counter += 1;
+  while (ITEMS.some(it => it.barcode === String(counter))) counter += 1;
   localStorage.setItem(COUNTER_KEY, counter);
+  return String(counter);
+}
+
+function autoGenerateBarcode() {
+  document.getElementById('fBarcode').value = nextBarcode();
+}
+
+/* ── Auto SKU generator (separate counter/field from barcode) ────── */
+function nextSku() {
+  let counter = parseInt(localStorage.getItem(SKU_COUNTER_KEY)) || 100000;
+  counter += 1;
+  while (ITEMS.some(it => it.sku === String(counter))) counter += 1;
+  localStorage.setItem(SKU_COUNTER_KEY, counter);
   return String(counter);
 }
 
@@ -92,17 +106,10 @@ function addItem() {
   if (!name) { showToast('Enter an item name first.'); return; }
 
   if (sizes.length > 0) {
-    const barcodes = String(barcode).split(';').map(b => b.trim()).filter(b => b.length > 0);
-    if (barcodes.length !== sizes.length) {
-      showToast(`Enter ${sizes.length} barcode(s) separated by ; to match your ${sizes.length} size(s).`);
-      return;
-    }
-    const dupe = barcodes.find(b => ITEMS.some(it => it.barcode === b));
-    if (dupe) { showToast(`Barcode "${dupe}" is already used.`); return; }
-
     let added = 0;
-    sizes.forEach((size, i) => {
-      ITEMS.unshift(makeItem(`${name} - ${size}`, price, nextSku(), barcodes[i]));
+    sizes.forEach(size => {
+      const itemBarcode = nextBarcode();
+      ITEMS.unshift(makeItem(`${name} - ${size}`, price, sku, itemBarcode));
       added++;
     });
     save();
@@ -113,19 +120,18 @@ function addItem() {
     document.getElementById('fBarcode').value = '';
     document.getElementById('fName').focus();
     renderList();
-    showToast(`${added} size(s) saved, each with its own SKU.`);
+    showToast(`${added} size(s) saved, each with its own barcode.`);
     return;
   }
 
-  if (!barcode) { showToast('Enter a barcode number.'); return; }
+  if (!barcode) { showToast('Add a barcode number, or click "Generate number".'); return; }
 
   if (ITEMS.some(it => it.barcode === barcode)) {
     showToast(`That barcode is already used by "${ITEMS.find(it => it.barcode === barcode).name}".`);
     return;
   }
 
-  const finalSku = sku || nextSku();
-  ITEMS.unshift(makeItem(name, price, finalSku, barcode));
+  ITEMS.unshift(makeItem(name, price, sku, barcode));
   save();
 
   document.getElementById('fName').value = '';
@@ -155,28 +161,23 @@ function addBulk() {
   }
 
   let added = 0;
-  let skipped = 0;
   lines.forEach(line => {
     const parts = line.split(',').map(p => p.trim());
     const name = parts[0];
     const price = parts[1] || '';
     const sizes = parseSizes(parts[2] || '');
-    const barcodes = String(parts[3] || '').split(';').map(b => b.trim()).filter(b => b.length > 0);
+    const sku = parts[3] || '';
     if (!name) return;
 
     if (sizes.length > 0) {
-      if (barcodes.length !== sizes.length) { skipped++; return; }
-      sizes.forEach((size, i) => {
-        if (ITEMS.some(it => it.barcode === barcodes[i])) { skipped++; return; }
-        const item = makeItem(`${name} - ${size}`, price, nextSku(), barcodes[i]);
+      sizes.forEach(size => {
+        const item = makeItem(`${name} - ${size}`, price, sku, nextBarcode());
         ITEMS.unshift(item);
         SELECTED.add(item.id);
         added++;
       });
     } else {
-      const barcode = barcodes[0];
-      if (!barcode || ITEMS.some(it => it.barcode === barcode)) { skipped++; return; }
-      const item = makeItem(name, price, nextSku(), barcode);
+      const item = makeItem(name, price, sku, nextBarcode());
       ITEMS.unshift(item);
       SELECTED.add(item.id);
       added++;
@@ -186,9 +187,7 @@ function addBulk() {
   save();
   document.getElementById('bulkText').value = '';
   renderList();
-  showToast(skipped > 0
-    ? `${added} item(s) saved; ${skipped} line(s) skipped (missing/duplicate barcode).`
-    : `${added} item(s) saved with new SKUs and selected for printing.`);
+  showToast(`${added} item(s) saved with new barcodes and selected for printing.`);
 }
 
 function selectAllVisible() {
