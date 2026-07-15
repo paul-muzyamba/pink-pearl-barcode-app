@@ -346,6 +346,19 @@ function printSelected() {
   document.documentElement.style.setProperty('--label-w', w + 'mm');
   document.documentElement.style.setProperty('--label-h', h + 'mm');
 
+  // Inject a real @page size rule with the actual numbers. CSS variables
+  // are not reliably supported inside @page, so this must be plain values —
+  // otherwise the browser/driver falls back to a default paper size that
+  // won't match the physical label, causing content to split across
+  // multiple physical labels.
+  let pageStyle = document.getElementById('dynamicPageSize');
+  if (!pageStyle) {
+    pageStyle = document.createElement('style');
+    pageStyle.id = 'dynamicPageSize';
+    document.head.appendChild(pageStyle);
+  }
+  pageStyle.textContent = `@media print { @page { size: ${w}mm ${h}mm; margin: 0; } }`;
+
   const printArea = document.getElementById('printArea');
   printArea.innerHTML = '';
   let totalLabels = 0;
