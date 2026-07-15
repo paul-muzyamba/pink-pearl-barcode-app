@@ -68,17 +68,38 @@ function autoGenerateBarcode() {
 }
 
 /* ── Auto SKU generator (separate counter/field from barcode) ────── */
-function nextSku() {
-  let counter = parseInt(localStorage.getItem(SKU_COUNTER_KEY)) || 100000;
-  counter += 1;
-  // Make sure it's not already used as a SKU OR a barcode on any item
-  while (ITEMS.some(it => it.sku === String(counter) || it.barcode === String(counter))) counter += 1;
-  localStorage.setItem(SKU_COUNTER_KEY, counter);
-  return String(counter);
+function skuPrefixFromName(name) {
+  const words = String(name ?? '')
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length === 0) return 'SKU';
+
+  let prefix;
+  if (words.length === 1) {
+    prefix = words[0].slice(0, 3).toUpperCase();
+  } else {
+    prefix = words.map(w => w[0]).join('').slice(0, 4).toUpperCase();
+  }
+  return prefix || 'SKU';
+}
+
+function nextSku(name) {
+  const prefix = skuPrefixFromName(name);
+  let n = 1;
+  let candidate;
+  do {
+    candidate = `${prefix}-${String(n).padStart(3, '0')}`;
+    n++;
+  } while (ITEMS.some(it => it.sku === candidate || it.barcode === candidate));
+  return candidate;
 }
 
 function autoGenerateSku() {
-  document.getElementById('fSku').value = nextSku();
+  const name = document.getElementById('fName').value.trim();
+  document.getElementById('fSku').value = nextSku(name);
 }
 
 /* ── Sizes helper ─────────────────────────────────────── */

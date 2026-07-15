@@ -478,7 +478,7 @@ Black Handbag, 600, , BAG-BLK"></textarea>
       <label>SKU (optional reference)</label>
       <div class="sku-input-group">
         <input type="text" id="eSku" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button class="btn-gold" onclick="document.getElementById('eSku').value = nextSku()">Generate number</button>
+        <button class="btn-gold" onclick="document.getElementById('eSku').value = nextSku(document.getElementById('eName').value.trim())">Generate number</button>
       </div>
     </div>
     <div class="field">
