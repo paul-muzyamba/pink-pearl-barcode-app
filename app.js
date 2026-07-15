@@ -341,8 +341,8 @@ function printSelected() {
     return;
   }
 
-  const w = document.getElementById('labelW').value || 40;
-  const h = document.getElementById('labelH').value || 30;
+  const w = document.getElementById('labelW').value || 60;
+  const h = document.getElementById('labelH').value || 40;
   document.documentElement.style.setProperty('--label-w', w + 'mm');
   document.documentElement.style.setProperty('--label-h', h + 'mm');
 
@@ -393,7 +393,7 @@ function printSelected() {
       try {
         const cleanBarcode = sanitizeBarcode(it.barcode);
         JsBarcode(svg, cleanBarcode, {
-          format: 'CODE128', displayValue: true, fontSize: 12, height: 40, margin: 2,
+          format: 'CODE128', displayValue: true, fontSize: 12, height: 55, margin: 2,
         });
       } catch (e) {
         svg.outerHTML = `<div style="color:red;font-size:8px;text-align:center;padding:2px;">Invalid barcode: "${escapeHtml(it.barcode)}"<br>${escapeHtml(e.message || '')}</div>`;
